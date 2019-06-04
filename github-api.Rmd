@@ -1,0 +1,67 @@
+---
+title: "Github API"
+author: "Charles Lang"
+date: "6/4/2019"
+output: html_document
+---
+
+```{r}
+#install.packages("jsonlite")
+library(jsonlite)
+#install.packages("httpuv")
+library(httpuv)
+#install.packages("httr")
+library(httr)
+
+# Can be github, linkedin etc depending on application
+oauth_endpoints("github")
+
+# Change based on what you 
+myapp <- oauth_app(appname = "",
+                   key = "",
+                   secret = "")
+
+# Get OAuth credentials
+github_token <- oauth2.0_token(oauth_endpoints("github"), myapp)
+
+```
+
+```{r}
+library(dplyr)
+
+#Add repos you want to pull from
+repos <- c("REPO1/pulls", "REPO2/pulls")
+
+gtoken <- config(token = github_token)
+
+D2 <- data.frame(matrix(vector(), 0, 3))
+names(D2) <- c("username","pull.date","unit")
+
+for(i in 1:5){
+   unit <- paste("https://api.github.com/repos/REPONAME/",repos[i], sep = "")
+   # Use API
+   req <- GET(unit, httr::authenticate("GITHUB USER", "PASSWORD"), httr::verbose())
+   # Take action on http error
+   stop_for_status(req)
+   # Extract content from a request
+   json1 = content(req)
+   # Convert to a data.frame
+   gitDF = jsonlite::fromJSON(jsonlite::toJSON(json1))
+   # Subset data.frame
+   #gitDF[gitDF$full_name == "Github-API/datasharing", "created_at"] 
+   user <- gitDF$user$login
+   pull.date <- gitDF$created_at
+     if(is.null(user)){
+        gitDF <- NULL
+        D1 <- NULL   
+   } else {
+   D1 <- data.frame(unlist(user), unlist(pull.date))
+   names(D1) <- c("username","pull.date")
+   D1$unit <- repos[i]
+   D2 <- bind_rows(D1, D2)
+   gitDF <- NULL
+   D1 <- NULL
+   }
+  }   
+   
+```
